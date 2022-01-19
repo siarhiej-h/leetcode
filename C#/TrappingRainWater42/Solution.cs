@@ -2,64 +2,54 @@
 {
     private (int sum, int leftBoundary) CalculateForward(int[] heights)
     {
-        var segmentStart = Enumerable.Range(0, heights.Length - 2)
-            .Select((h, i) => (int?) i)
-            .TakeWhile(i => i.Value < heights.Length - 1)
-            .FirstOrDefault(i => heights[i.Value + 1] < heights[i.Value]);
+        var (segmentStart, startFound) = Enumerable.Range(0, heights.Length - 2)
+            .Where(i => heights[i + 1] < heights[i])
+            .Select(i => (i, found: true))
+            .FirstOrDefault();
 
-        if (segmentStart.HasValue)
+        if (startFound)
         {
-            (int segmentStart, int segmentLength, int trapHeight) SelectSegment(int segmentEnd)
-            {
-                var segment = (segmentStart.Value + 1, segmentEnd - segmentStart.Value - 1, heights[segmentStart.Value]);
-                segmentStart = segmentEnd;
-                return segment;
-            }
-
-            var segments = heights.Select((h, i) => i)
-                .Skip(segmentStart.Value + 1)
-                .Where(i => heights[i] >= heights[segmentStart.Value])
-                .Select(SelectSegment);
-            var sum = SumSegments(heights, segments);
-            return (sum, segmentStart.Value);
+            var sum = Enumerable.Range(segmentStart + 1, heights.Length - segmentStart - 1)
+                .Where(i => heights[i] >= heights[segmentStart])
+                .Sum(segmentEnd => CalculateSegmentSum(heights, segmentStart, segmentEnd, heights[segmentStart],
+                    () => segmentStart = segmentEnd));
+            return (sum, segmentStart);
         }
 
         return (0, 0);
     }
 
-    private int CalculateBackward(int[] heights, int segmentStart)
+    private int CalculateBackward(int[] heights, int leftBoundary)
     {
-        int? segmentEnd = heights
-            .Select((h, i) => (int?) heights.Length - 1 - i)
-            .TakeWhile(i => i.Value > segmentStart + 1)
-            .FirstOrDefault(i => heights[i.Value - 1] < heights[i.Value]);
+        if (leftBoundary > heights.Length - 3)
+            return 0;
 
-        if (segmentEnd.HasValue)
+        var (segmentEnd, endFound) = Enumerable.Range(leftBoundary + 2, heights.Length - leftBoundary - 2)
+            .Reverse()
+            .Where(i => heights[i - 1] < heights[i])
+            .Select(i => (i, found: true))
+            .FirstOrDefault();
+
+        if (endFound)
         {
-            (int segmentStart, int segmentLength, int trapHeight) SelectSegment(int segmentStart)
-            {
-                var segment = (segmentStart + 1, segmentEnd.Value - segmentStart - 1, heights[segmentEnd.Value]);
-                segmentEnd = segmentStart;
-                return segment;
-            }
-
-            var segments = Enumerable.Range(segmentStart, segmentEnd.Value - 1 - segmentStart)
+            return Enumerable.Range(leftBoundary, segmentEnd - 1 - leftBoundary)
                 .Reverse()
-                .Where(i => heights[i] >= heights[segmentEnd.Value])
-                .Select(SelectSegment);
-            return SumSegments(heights, segments);
+                .Where(i => heights[i] >= heights[segmentEnd])
+                .Sum(segmentStart => CalculateSegmentSum(heights, segmentStart, segmentEnd, heights[segmentEnd],
+                    () => segmentEnd = segmentStart));
         }
 
         return 0;
     }
 
-    private int SumSegments(int[] heights, IEnumerable<(int segmentStart, int segmentLength, int trapHeight)> segments)
+    private static int CalculateSegmentSum(int[] heights, int start, int end, int trapHeight, Action sideEffect)
     {
-        return segments.SelectMany(segment => heights
-            .Skip(segment.segmentStart)
-            .Take(segment.segmentLength)
-            .Select(height => segment.trapHeight - height))
-            .Sum();
+        var sum = heights
+            .Skip(start + 1)
+            .Take(end - start - 1)
+            .Sum(height => trapHeight - height);
+        sideEffect();
+        return sum;
     }
 
     public int Trap(int[] heights)
