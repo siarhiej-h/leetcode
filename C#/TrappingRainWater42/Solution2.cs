@@ -1,6 +1,6 @@
 ﻿public class Solution2
 {
-    private static IEnumerable<(int segmentStart, int segmentEnd, int trapHeight)> FindSegments(int[] heights)
+    private static IEnumerable<IEnumerable<int>> FindSegments(int[] heights)
     {
         int? segmentStart = heights
             .Select((h, i) => (int?)i)
@@ -13,7 +13,11 @@
             {
                 if (heights[i] >= heights[segmentStart.Value])
                 {
-                    yield return (segmentStart.Value + 1, i, heights[segmentStart.Value]);
+                    var trapHeight = heights[segmentStart.Value];
+                    yield return heights
+                        .Skip(segmentStart.Value + 1)
+                        .Take(i - segmentStart.Value - 1)
+                        .Select(height => trapHeight - height);
                     segmentStart = i;
                 }
             }
@@ -34,7 +38,11 @@
             {
                 if (heights[i] >= heights[segmentEnd.Value])
                 {
-                    yield return (i + 1, segmentEnd.Value, heights[segmentEnd.Value]);
+                    var trapHeight = heights[segmentEnd.Value];
+                    yield return heights
+                        .Skip(i + 1)
+                        .Take(segmentEnd.Value - i - 1)
+                        .Select(height => trapHeight - height);
                     segmentEnd = i;
                 }
             }
@@ -44,8 +52,7 @@
     public int Trap(int[] height)
     {
         return FindSegments(height)
-            .Select(t => height[t.segmentStart..t.segmentEnd]
-            .Sum(height => t.trapHeight - height))
+            .SelectMany(trappedElements => trappedElements)
             .Sum();
     }
 }

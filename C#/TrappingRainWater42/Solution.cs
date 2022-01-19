@@ -1,6 +1,6 @@
 ﻿public class Solution
 {
-    private int CalculateForward(int[] heights, out int leftBoundary)
+    private (int sum, int leftBoundary) CalculateForward(int[] heights)
     {
         var segmentStart = Enumerable.Range(0, heights.Length - 2)
             .Select((h, i) => (int?) i)
@@ -21,12 +21,10 @@
                 .Where(i => heights[i] >= heights[segmentStart.Value])
                 .Select(SelectSegment);
             var sum = SumSegments(heights, segments);
-            leftBoundary = segmentStart.Value;
-            return sum;
+            return (sum, segmentStart.Value);
         }
 
-        leftBoundary = 0;
-        return 0;
+        return (0, 0);
     }
 
     private int CalculateBackward(int[] heights, int segmentStart)
@@ -68,6 +66,9 @@
     {
         if (heights.Length < 3)
             return 0;
-        return CalculateForward(heights, out var leftBoundary) + CalculateBackward(heights, leftBoundary);
+
+        var (trappedForward, leftBoundary) = CalculateForward(heights);
+        var trappedBackward = CalculateBackward(heights, leftBoundary);
+        return trappedForward + trappedBackward;
     }
 }

@@ -1,25 +1,22 @@
 ﻿public class Solution3
 {
-    static (int result, bool found) FindFirst(int start, int end, Func<int, bool> predicate)
-    {
-        for (int i = start; i != end; i++)
-        {
-            if (predicate(i))
-                return (i, true);
-        }
-        return (-1, false);
-    }
-
     static (Range range, bool trapFound, bool endReached) FindNextTrap(int[] heights, int start)
     {
         if (start >= heights.Length - 1)
             return (Range.EndAt(0), false, true);
 
-        var (trapStart, startFound) = FindFirst(start, heights.Length - 1, i => heights[i + 1] < heights[i]);
+        var (trapStart, startFound) = Enumerable.Range(start, heights.Length - 1 - start)
+            .Where(i => heights[i + 1] < heights[i])
+            .Select(i => (i, true))
+            .FirstOrDefault();
         if (!startFound)
             return (Range.EndAt(0), false, true);
 
-        var (trapEnd, trapEndFound) = FindFirst(trapStart + 1, heights.Length, i => heights[i] >= heights[trapStart]);
+        var (trapEnd, trapEndFound) = Enumerable.Range(trapStart + 1, heights.Length - start)
+            .Where(i => heights[i] >= heights[trapStart])
+            .Select(i => (i, true))
+            .FirstOrDefault();
+
         if (!trapEndFound)
         {
             var span = heights.AsSpan(trapStart);
